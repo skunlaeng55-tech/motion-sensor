@@ -1,168 +1,293 @@
 <!DOCTYPE html>
-<html lang="km">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>កម្មវិធីសេនស័រចាប់ចលនា</title>
+    <title>Anti-Lock Privacy Motion Sensor</title>
     <style>
         body {
-            font-family: 'Khmer OS Battambang', Arial, sans-serif;
-            background-color: #f0f4f8;
-            color: #333;
+            font-family: Arial, sans-serif;
             text-align: center;
+            background-color: #121212;
+            color: white;
             padding: 20px;
             margin: 0;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 500px;
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        h1 { color: #ff3333; font-size: 1.5rem; }
+        #video-container {
+            position: relative;
+            width: 320px;
+            height: 240px;
             margin: 20px auto;
-        }
-        h1 {
-            color: #007bff;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        .status-box {
-            font-size: 20px;
-            font-weight: bold;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #e9ecef;
-            margin: 20px 0;
-            transition: all 0.3s ease;
-        }
-        .motion-detected {
-            background-color: #dc3545;
-            color: white;
-            animation: blink 0.5s infinite alternate;
-        }
-        @keyframes blink {
-            from { opacity: 1; }
-            to { opacity: 0.7; }
-        }
-        .btn-start {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 18px;
-            border-radius: 25px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,123,255,0.3);
-            transition: background 0.2s;
-        }
-        .btn-start:hover {
-            background-color: #0056b3;
-        }
-        /* រចនាបថប៊ូតុងទាញយក */
-        .download-section {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px dashed #ddd;
-        }
-        .btn-download {
-            display: inline-block;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            padding: 12px 25px;
-            font-size: 16px;
-            font-weight: bold;
+            border: 3px solid #ff3333;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(40,167,69,0.3);
-            transition: background 0.2s, transform 0.1s;
+            overflow: hidden;
         }
-        .btn-download:hover {
-            background-color: #218838;
+        video, canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
         }
-        .btn-download:active {
-            transform: scale(0.98);
+        canvas { display: none; }
+        .controls { margin: 20px; }
+        button {
+            font-size: 16px;
+            padding: 12px 20px;
+            margin: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
         }
-        .hint {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 8px;
+        #startBtn { background-color: #00ff88; color: black; }
+        #stopBtn { background-color: #ff3333; color: white; }
+        #ecoModeBtn { background-color: #007bff; color: white; }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+        #status {
+            font-size: 1.2rem;
+            margin-top: 15px;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        /* ផ្ទាំងអេក្រង់ខ្មៅងងឹតទាំងស្រុងសម្រាប់សន្សំថ្ម និងការពារឯកជនភាព */
+        #privacyOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000; /* ខ្មៅងងឹត ១០០% */
+            z-index: 99999; /* ឱ្យនៅពីលើគេបង្អស់ */
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>សេនស័រចាប់ចលនា (Motion Sensor)</h1>
-        
-        <p>ចុចប៊ូតុងខាងក្រោមដើម្បីបើកដំណើរការសេនស័រ</p>
-        <button class="btn-start" id="startBtn">បើកសេនស័រ</button>
-
-        <div class="status-box" id="status">ស្ថានភាព៖ មិនទាន់ដំណើរការ</div>
-
-        <div class="download-section">
-            <p style="margin-bottom: 10px; font-size: 14px; color: #555;">ចង់បានកម្មវិធីនេះយកទៅប្រើប្រាស់ផ្ទាល់ខ្លួន?</p>
-            <a href="" id="downloadLink" download="motion-sensor.html" class="btn-download">
-                📥 ទាញយកកម្មវិធីនេះ (Download Code)
-            </a>
-            <div class="hint">*ហ្វាយដែលទាញយកនឹងមានទម្រង់ជា .html អាចបើកប្រើបានភ្លាមៗ</div>
-        </div>
+    <h1>🚨 Anti-Lock Motion Sensor (2-3M)</h1>
+    
+    <div id="video-container">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
     </div>
 
+    <div class="controls">
+        <button id="startBtn">START SENSOR</button>
+        <button id="ecoModeBtn" disabled>សន្សំថាមពល & ឯកជនភាព</button>
+        <button id="stopBtn" disabled>STOP</button>
+    </div>
+
+    <div id="status">ស្ថានភាព៖ មិនទាន់ដំណើរការ</div>
+    
+    <div id="privacyOverlay"></div>
+
     <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const startBtn = document.getElementById('startBtn');
-        const statusBox = document.getElementById('status');
-        const downloadLink = document.getElementById('downloadLink');
+        const stopBtn = document.getElementById('stopBtn');
+        const ecoModeBtn = document.getElementById('ecoModeBtn');
+        const privacyOverlay = document.getElementById('privacyOverlay');
+        const statusText = document.getElementById('status');
 
-        // កូដស្វ័យប្រវត្តិកំណត់លីងទាញយកកូដខ្លួនឯង
-        downloadLink.href = window.location.href;
+        let stream = null;
+        let animationId = null;
+        let lastFrameData = null;
+        let isDetecting = false;
+        let lastAlertTime = 0;
+        const ALERT_COOLDOWN = 6000; 
 
-        startBtn.addEventListener('click', async () => {
-            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                // សម្រាប់ទូរសព្ទ iPhone (iOS)
-                try {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission === 'granted') {
-                        initSensor();
-                    } else {
-                        statusBox.textContent = "ស្ថានភាព៖ បដិសេធការអនុញ្ញាតសេនស័រ";
-                    }
-                } catch (error) {
-                    statusBox.textContent = "កំហុស៖ មិនអាចស្នើសុំសេនស័របានទេ";
-                }
-            } else {
-                // សម្រាប់ទូរសព្ទ Android ឬឧបករណ៍ផ្សេងទៀត
-                initSensor();
+        let audioCtx = null;
+        let wakeLock = null; // ប្រព័ន្ធឃាត់ទូរសព្ទមិនឱ្យចាក់សោ
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        // មុខងារបញ្ជាទូរសព្ទមិនឱ្យងងឹត ឬចាក់សោអេក្រង់ (Keep Screen Awake)
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock is active. ទូរសព្ទនឹងមិនចាក់សោឡើយ!');
+                } else {
+                    console.warn('Wake Lock API not supported on this browser.');
+                }
+            } catch (err) {
+                console.error(`Wake Lock Error: ${err.message}`);
+            }
+        }
+
+        // មុខងារដោះលែង Wake Lock ពេលឈប់ប្រើ
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        }
+
+        function playLongSiren(duration = 5) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            const now = audioCtx.currentTime;
+            
+            for (let i = 0; i < duration; i += 0.4) {
+                osc.frequency.setValueAtTime(600, now + i);
+                osc.frequency.linearRampToValueAtTime(900, now + i + 0.2);
+                osc.frequency.linearRampToValueAtTime(600, now + i + 0.4);
+            }
+            
+            gain.gain.setValueAtTime(0.9, now);
+            gain.gain.setValueAtTime(0.9, now + duration - 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        }
+
+        async function startSensor() {
+            try {
+                statusText.innerText = "កំពុងភ្ជាប់ទៅកាមេរ៉ា...";
+                initAudio();
+                
+                // ហៅប្រព័ន្ធឃាត់ទូរសព្ទកុំឱ្យចាក់សោអេក្រង់
+                await requestWakeLock();
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: "environment",
+                        width: { ideal: 1280 }, 
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    },
+                    audio: false
+                });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    canvas.width = 128; 
+                    canvas.height = 96;
+                    isDetecting = true;
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    ecoModeBtn.disabled = false;
+                    statusText.innerText = "🚨 សេនស័រដំណើរការ៖ កម្រិតចាប់សញ្ញាខ្ពស់បំផុត (២-៣ ម៉ែត្រ)";
+                    statusText.style.color = "#00ff88";
+                    detectMotion();
+                };
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "កំហុស៖ មិនអាចបើកកាមេរ៉ាបានទេ។";
+            }
+        }
+
+        function detectMotion() {
+            if (!isDetecting) return;
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            if (lastFrameData) {
+                let changedPixels = 0;
+                const totalPixels = currentFrame.data.length / 4;
+
+                for (let i = 0; i < currentFrame.data.length; i += 4) {
+                    const rDiff = Math.abs(currentFrame.data[i] - lastFrameData.data[i]);
+                    const gDiff = Math.abs(currentFrame.data[i+1] - lastFrameData.data[i+1]);
+                    const bDiff = Math.abs(currentFrame.data[i+2] - lastFrameData.data[i+2]);
+
+                    if (rDiff + gDiff + bDiff > 40) { 
+                        changedPixels++;
+                    }
+                }
+
+                const motionPercentage = (changedPixels / totalPixels) * 100;
+
+                // ចាប់សញ្ញាបានឆ្ងាយ ២-៣ ម៉ែត្រ ទោះកាយវិការតូចបំផុតក៏ដឹងដែរ
+                if (motionPercentage > 0.4) {
+                    triggerVoiceAlert();
+                }
+            }
+
+            lastFrameData = currentFrame;
+            animationId = requestAnimationFrame(detectMotion);
+        }
+
+        function triggerVoiceAlert() {
+            const now = Date.now();
+            if (now - lastAlertTime > ALERT_COOLDOWN) {
+                lastAlertTime = now;
+                
+                // រោទិ៍ស៊ីរ៉ែនខ្លាំង ៥ វិនាទី
+                playLongSiren(5);
+
+                if (privacyOverlay.style.display !== 'block') {
+                    statusText.innerText = "⚠️ រកឃើញមានចលនាឆ្លងកាត់!";
+                    statusText.style.color = "#ff3333";
+                    setTimeout(() => {
+                        if (isDetecting && privacyOverlay.style.display !== 'block') {
+                            statusText.innerText = "🚨 សេនស័រដំណើរការ៖ កម្រិតចាប់សញ្ញាខ្ពស់បំផុត (២-៣ ម៉ែត្រ)";
+                            statusText.style.color = "#00ff88";
+                        }
+                    }, 5000);
+                }
+            }
+        }
+
+        // ចុចប៊ូតុង សន្សំថាមពល ដើម្បីធ្វើឱ្យអេក្រង់ខ្មៅងងឹតស្លុបទាំងស្រុង
+        ecoModeBtn.addEventListener('click', () => {
+            privacyOverlay.style.display = 'block';
         });
 
-        function initSensor() {
-            statusBox.textContent = "ស្ថានភាព៖ កំពុងចាប់ចលនា...";
-            startBtn.style.display = 'none'; // លាក់ប៊ូតុងបើកក្រោយពេលបើករួច
+        // ចុចប៉ះលើអេក្រង់ខ្មៅ ១ដង ដើម្បីបង្ហាញរូបភាពមកវិញធម្មតា
+        privacyOverlay.addEventListener('click', () => {
+            privacyOverlay.style.display = 'none';
+        });
 
-            window.addEventListener('devicemotion', (event) => {
-                const acc = event.accelerationIncludingGravity;
-                if (!acc) return;
+        function stopSensor() {
+            isDetecting = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+            lastFrameData = null;
+            
+            // ដោះលែងប្រព័ន្ធកុំឱ្យជាប់ Screen Lock វិញ
+            releaseWakeLock();
 
-                // គណនាកម្រិតចលនាបំរ៉ាស់ប្តូរ
-                const speed = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
-
-                // ប្រសិនបើមានចលនាខ្លាំងជាងកម្រិតធម្មតា (កែប្រែលេខ 15 បើចង់ឱ្យរំញោចខ្លាំងឬខ្សោយ)
-                if (speed > 15) {
-                    statusBox.textContent = "🚨 មានចលនា! Motion Detected!";
-                    statusBox.classList.add('motion-detected');
-                    
-                    // ឱ្យទូរសព្ទញ័រ (ដំណើរការតែលើ Android)
-                    if (navigator.vibrate) {
-                        navigator.vibrate(500);
-                    }
-                } else {
-                    statusBox.textContent = "ស្ថានភាព៖ ស្ងប់ស្ងាត់ (កំពុងរង់ចាំ...)";
-                    statusBox.classList.remove('motion-detected');
-                }
-            });
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            ecoModeBtn.disabled = true;
+            privacyOverlay.style.display = 'none';
+            statusText.innerText = "បានបញ្ឈប់សេនស័រ។";
+            statusText.style.color = "#ffcc00";
         }
-    </script>
 
+        startBtn.addEventListener('click', startSensor);
+        stopBtn.addEventListener('click', stopSensor);
+
+        // ប្រសិនបើអ្នកប្រើប្រាស់ប្តូរ Tab ឬថយទៅ Home ត្រូវហៅ Wake Lock ម្តងទៀតពេលចូលវិញ
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+    </script>
 </body>
 </html>
-
+<a href="index.html" download="motion-sensor-code.html">
+  <button style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+    ទាញយកកូដនៅទីនេះ (Download Code)
+  </button>
+</a>
